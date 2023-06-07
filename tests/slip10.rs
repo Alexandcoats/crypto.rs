@@ -38,7 +38,11 @@ mod slip10 {
             assert_eq!(expected_master_private_key, *m.secret_key().to_bytes());
 
             for c in tv.chains.iter() {
-                let hardened_chain = c.chain.iter().cloned().map(|segment| segment.try_into().unwrap());
+                let hardened_chain = c
+                    .chain
+                    .iter()
+                    .map(|&segment| segment.try_into())
+                    .collect::<Result<Vec<_>, _>>()?;
                 let ck: slip10::Slip10<ed25519::SecretKey> = seed.derive(hardened_chain);
 
                 let mut expected_chain_code = [0u8; 32];

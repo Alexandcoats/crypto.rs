@@ -101,7 +101,7 @@ pub mod secp256k1 {
                 if scalar.is_zero().into() {
                     false
                 } else {
-                    key_bytes[1..].copy_from_slice(&scalar.to_bytes());
+                    key_bytes[1..].copy_from_slice(scalar.to_bytes().as_ref());
                     true
                 }
             } else {
@@ -222,9 +222,9 @@ impl Seed {
 
     pub fn derive<K, I>(&self, chain: I) -> Slip10<K>
     where
-        K: hazmat::IsSecretKey + hazmat::CalcData<<I as Iterator>::Item>,
-        I: Iterator,
-        <I as Iterator>::Item: Segment,
+        K: hazmat::IsSecretKey + hazmat::CalcData<I::Item>,
+        I: IntoIterator,
+        I::Item: Segment,
     {
         self.to_master_key().derive(chain)
     }
@@ -351,9 +351,9 @@ impl<K: hazmat::Derivable> Slip10<K> {
 
     pub fn derive<I>(&self, chain: I) -> Self
     where
-        K: hazmat::IsSecretKey + hazmat::CalcData<<I as Iterator>::Item>,
-        I: Iterator,
-        <I as Iterator>::Item: Segment,
+        K: hazmat::IsSecretKey + hazmat::CalcData<I::Item>,
+        I: IntoIterator,
+        I::Item: Segment,
     {
         let mut key: Self = self.clone();
         for segment in chain {
@@ -466,12 +466,15 @@ impl From<Hardened> for u32 {
 }
 
 impl TryFrom<u32> for Hardened {
-    type Error = ();
-    fn try_from(segment: u32) -> Result<Self, ()> {
+    type Error = crate::Error;
+    fn try_from(segment: u32) -> Result<Self, Self::Error> {
         if segment.is_hardened() {
             Ok(Hardened(segment))
         } else {
-            Err(())
+            Err(crate::Error::ConvertError {
+                from: "u32",
+                to: "hardened",
+            })
         }
     }
 }
@@ -498,12 +501,15 @@ impl From<NonHardened> for u32 {
 }
 
 impl TryFrom<u32> for NonHardened {
-    type Error = ();
-    fn try_from(segment: u32) -> Result<Self, ()> {
+    type Error = crate::Error;
+    fn try_from(segment: u32) -> Result<Self, Self::Error> {
         if !segment.is_hardened() {
             Ok(NonHardened(segment))
         } else {
-            Err(())
+            Err(crate::Error::ConvertError {
+                from: "u32",
+                to: "non-hardened",
+            })
         }
     }
 }
